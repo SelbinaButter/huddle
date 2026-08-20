@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "date": "2026-08-01",
+  "number": 213,
+  "spot": 12,
+  "personnel": "11",
+  "concepts": [
+    "stick",
+    "mesh",
+    "y-cross",
+    "smash",
+    "four-verts",
+    "slant-flat",
+    "flood",
+    "levels"
+  ],
+  "shell": "BhFhemhsYVcs",
+  "par": 2
+}

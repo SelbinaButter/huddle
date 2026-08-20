@@ -1,0 +1,66 @@
+name: Publish daily defense
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '8 0 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    env:
+      HUDDLE_SEED_SALT: ${{ secrets.HUDDLE_SEED_SALT }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Restore validated puzzle archive
+        uses: actions/cache@v4
+        with:
+          path: |
+            public/puzzles
+            .generated/solutions
+          key: huddle-puzzle-archive-${{ github.run_id }}
+          restore-keys: huddle-puzzle-archive-
+      - name: Generate archive through today (UTC)
+        run: npx tsx scripts/generate.ts --from 2026-07-21 --through "$(date -u +%F)" --missing
+      - name: Fast core and share checks
+        run: npm test
+        env:
+          CI: true
+      # Pushes and manual runs prove the whole system. The daily cron only adds one
+      # already-gated JSON file, so it avoids the costly browser install/full suite.
+      - name: Exhaustive 60-day generation verification
+        if: github.event_name != 'schedule'
+        run: npm run test:generation
+      - name: Install browser test dependencies
+        if: github.event_name != 'schedule'
+        run: npx playwright install --with-deps chromium
+      - name: Browser lookup and game-mode verification
+        if: github.event_name != 'schedule'
+        run: npm run test:browser
+      - run: npm run build
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
