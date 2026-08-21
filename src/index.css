@@ -98,10 +98,10 @@ footer { display: flex; justify-content: space-between; color: #71827a; font-siz
 .overlay { position: fixed; z-index: 20; inset: 0; display: grid; place-items: center; padding: 20px; background: rgba(2,9,6,.78); backdrop-filter: blur(10px); }
 .onboarding { width: min(520px, 100%); max-height: 90vh; overflow: auto; border-radius: 24px; background: #10271d; border: 1px solid rgba(255,255,255,.14); box-shadow: 0 32px 100px rgba(0,0,0,.6); padding: clamp(24px, 5vw, 42px); }
 .onboarding h2 { font-size: 2rem; letter-spacing: -.04em; margin: 9px 0 22px; }
-.onboarding ol { padding-left: 22px; color: var(--muted); line-height: 1.55; }
-.onboarding li { padding: 6px 0 6px 5px; }.onboarding b { color: var(--ink); }
+.onboarding ol { padding-left: 0; list-style: none; color: var(--muted); line-height: 1.55; }
+.onboarding li { padding: 6px 0; }.onboarding b { color: var(--ink); }
 .onboarding small { display: block; text-align: center; color: var(--muted); margin-top: 12px; }
-.legend { display: flex; gap: 18px; padding: 14px; border-radius: 12px; background: rgba(0,0,0,.16); font-size: .75rem; }
+.legend { display: flex; gap: 18px; margin-top: 12px; padding: 14px; border-radius: 12px; background: rgba(0,0,0,.16); font-size: .75rem; }
 .legend i { display: inline-block; width: 10px; height: 10px; margin-right: 4px; border-radius: 50%; }
 .zone-key { background: #7ec8ff; }.man-key { background: #ffd166; }.blitz-key { background: #ff6b68; }
 

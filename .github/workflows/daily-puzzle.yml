@@ -4,7 +4,11 @@ on:
   push:
     branches: [main]
   schedule:
-    - cron: '8 0 * * *'
+    # Scheduled workflows are best-effort and can be delayed during the busy
+    # turn of the hour. Later idempotent windows recover a missed first run.
+    - cron: '17 0 * * *'
+    - cron: '17 3 * * *'
+    - cron: '17 6 * * *'
   workflow_dispatch:
 
 permissions:
@@ -41,6 +45,11 @@ jobs:
           restore-keys: huddle-puzzle-archive-
       - name: Generate archive through today (UTC)
         run: npx tsx scripts/generate.ts --from 2026-07-21 --through "$(date -u +%F)" --missing
+      - name: Verify today's puzzle is in the archive
+        run: |
+          today="$(date -u +%F)"
+          test -f "public/puzzles/${today}.json"
+          node -e 'const fs=require("node:fs"); const today=new Date().toISOString().slice(0,10); const index=JSON.parse(fs.readFileSync("public/puzzles/index.json","utf8")); if (!index.dates.includes(today)) throw new Error(`Puzzle index does not contain ${today}`)'
       - name: Fast core and share checks
         run: npm test
         env:

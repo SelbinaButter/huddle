@@ -67,6 +67,8 @@ export type OutcomeKind = 'touchdown' | 'short' | 'breakup' | 'interception'
 export interface PlayOutcome {
   kind: OutcomeKind
   yards: number
+  airYards: number
+  yardsAfterCatch: number
   nearestDefender?: CoverageDefenderId
   separation: number
 }

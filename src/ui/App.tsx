@@ -12,8 +12,8 @@ interface PuzzleIndex { dates: string[] }
 interface Animation { observation: PlayedSnap['observation']; outcome: PlayedSnap['outcome']; concept: ConceptId; target: ReceiverId; progress: number }
 
 const OUTCOME_COPY = {
-  touchdown: ['Touchdown', 'You found grass in the end zone.'],
-  short: ['Caught short', 'Open, but the route stopped before the goal line.'],
+  touchdown: ['Touchdown', 'You found grass and finished the play.'],
+  short: ['Tackled short', 'The catch was made, but pursuit arrived before the goal line.'],
   breakup: ['Broken up', 'A defender arrived at the catch point.'],
   interception: ['Picked', 'A defender was sitting in the throwing lane.'],
 } as const
@@ -157,11 +157,11 @@ export default function App() {
             <div className="field-panel">
               <div className="score-strip"><span><i /> 1st & goal · {puzzle.spot}</span><span>{puzzle.personnel} personnel</span><strong>{finished ? (won ? `${snaps.length}/${MAX_SNAPS}` : `X/${MAX_SNAPS}`) : `Snap ${snaps.length + 1}/${MAX_SNAPS}`}</strong></div>
               <div className="field-wrap">
-                <FieldCanvas concept={concept} target={target} snaps={snaps} active={animation ? { observation: animation.observation, progress: animation.progress } : undefined} revealedShellId={finished ? shellId : undefined} />
+                <FieldCanvas concept={concept} target={target} snaps={snaps} active={animation ? { observation: animation.observation, outcome: animation.outcome, progress: animation.progress } : undefined} revealedShellId={finished ? shellId : undefined} />
                 {animation && <div className="live-badge">BALL OUT</div>}
                 {finished && showResult && <div className="result-modal" role="dialog" aria-label="Puzzle result"><button className="close" type="button" aria-label="Close result" onClick={() => setShowResult(false)}>×</button><span className="eyebrow">{won ? snaps.length < puzzle.par ? 'Beat par' : 'Drive complete' : 'Turnover on downs'}</span><strong>{won ? `${snaps.length}/${MAX_SNAPS}` : `X/${MAX_SNAPS}`}</strong><p>{won ? `You found the end zone against ${shell?.base.replace('-', ' ')}.` : `It was ${shell?.base.replace('-', ' ')}. Watch the full assignments, then try the archive.`}</p><button type="button" onClick={() => void copyResult()}>{copied ? 'Copied!' : 'Share result'}</button><button className="text-button" type="button" onClick={() => setShowResult(false)}>Watch the film</button></div>}
               </div>
-              {lastSnap && <div className={`feedback ${lastSnap.outcome.kind}`} role="status"><b>{OUTCOME_COPY[lastSnap.outcome.kind][0]}{lastSnap.outcome.kind === 'short' ? ` · ${lastSnap.outcome.yards} yards` : ''}</b><span>{OUTCOME_COPY[lastSnap.outcome.kind][1]}</span></div>}
+              {lastSnap && <div className={`feedback ${lastSnap.outcome.kind}`} role="status"><b>{OUTCOME_COPY[lastSnap.outcome.kind][0]}{lastSnap.outcome.kind === 'short' ? ` · ${lastSnap.outcome.yards} yards` : ''}</b><span>{lastSnap.outcome.yardsAfterCatch > 0 ? `Caught at ${lastSnap.outcome.airYards}, then gained ${lastSnap.outcome.yardsAfterCatch} after the catch. ${OUTCOME_COPY[lastSnap.outcome.kind][1]}` : OUTCOME_COPY[lastSnap.outcome.kind][1]}</span></div>}
               {!snaps.length && <div className="first-read"><b>Your first snap is the read.</b> Choose a concept to stress part of the field, then commit to one target. Blue patches are zones, gold tethers are man, and a red rusher is a blitz.</div>}
             </div>
 

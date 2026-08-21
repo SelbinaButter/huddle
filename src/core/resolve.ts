@@ -5,12 +5,19 @@ import type { ConceptId, CoverageDefenderId, DefenderObservation, Observation, P
 const REVEAL_RADIUS_SQ = 36
 const COVER_RADIUS_SQ = 27
 const PICK_RADIUS_SQ = 5
+const MAX_YARDS_AFTER_CATCH = 8
 
 function distanceSquared(a: Vec2, b: Vec2): number {
   return (a.x - b.x) ** 2 + (a.y - b.y) ** 2
 }
 
 function finalPoint(route: Route): Vec2 { return route.points[route.points.length - 1] }
+
+function yardsAfterCatch(separation: number): number {
+  // Once the receiver has enough room to secure the ball, every additional two
+  // yards of cushion buys roughly one yard before pursuit arrives.
+  return Math.max(0, Math.min(MAX_YARDS_AFTER_CATCH, Math.floor((separation - 4) / 2)))
+}
 
 function manPoint(shell: Shell, defender: CoverageDefenderId, route: Route): Vec2 {
   const point = finalPoint(route)
@@ -79,16 +86,18 @@ export function resolvePlay(shell: Shell, conceptId: ConceptId, target: Receiver
     if (!nearest || distance < nearest.distance) nearest = { defender, distance }
   }
   const separation = nearest ? Math.round(Math.sqrt(nearest.distance) * 10) / 10 : 20
+  const airYards = Math.max(0, Math.min(12, Math.round(catchPoint.y)))
   if (nearest && nearest.distance <= PICK_RADIUS_SQ) {
-    return { kind: 'interception', yards: 0, nearestDefender: nearest.defender, separation }
+    return { kind: 'interception', yards: 0, airYards, yardsAfterCatch: 0, nearestDefender: nearest.defender, separation }
   }
   if (nearest && nearest.distance <= COVER_RADIUS_SQ) {
-    return { kind: 'breakup', yards: 0, nearestDefender: nearest.defender, separation }
+    return { kind: 'breakup', yards: 0, airYards, yardsAfterCatch: 0, nearestDefender: nearest.defender, separation }
   }
-  const yards = Math.max(0, Math.min(12, Math.round(catchPoint.y)))
-  return catchPoint.y >= 12
-    ? { kind: 'touchdown', yards: 12, separation }
-    : { kind: 'short', yards, separation }
+  const run = yardsAfterCatch(separation)
+  const yards = Math.min(12, airYards + run)
+  return yards >= 12
+    ? { kind: 'touchdown', yards, airYards, yardsAfterCatch: 12 - airYards, separation }
+    : { kind: 'short', yards, airYards, yardsAfterCatch: run, separation }
 }
 
 export function computeShellTables(shell: Shell) {

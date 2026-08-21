@@ -26,15 +26,15 @@ Set `HUDDLE_SEED_SALT` before production generation. The public shell value is d
 
 ## How it works
 
-`src/core/` is pure TypeScript with no React or DOM dependencies. The game uses a 1-yard lattice and integer distance comparisons; there is no physics integration or cross-engine floating-point state. `scripts/buildTables.ts` computes and commits all 256 shell variants × eight concept observations and 256 × 40 play outcomes to `public/tables.json`. Both generation and the browser only look those values up.
+`src/core/` is pure TypeScript with no React or DOM dependencies. The game uses a 1-yard lattice and deterministic distance comparisons; there is no physics integration or cross-engine floating-point state. Open completions gain yards after the catch according to the nearest defender's cushion, while tight-window throws are still broken up or intercepted. `scripts/buildTables.ts` computes and commits all 256 shell variants × eight concept observations and 256 × 40 play outcomes to `public/tables.json`. Both generation and the browser only look those values up.
 
-The current measured pool contains 56 states that pass all gates: 5–15% blind scoring plays, 3–8 survivors after the worst first snap, no universal pre-snap scoring throw, at least 90% first-snap convertibility, and reference par at most three. Per-date generation excludes the prior 30 shells, writes the public puzzle to `public/puzzles/`, and writes the unobfuscated answer and measurements only to gitignored `.generated/solutions/`.
+The current measured pool contains 64 states that pass all gates: 5–15% blind scoring plays, 3–8 survivors after the worst first snap, no universal pre-snap scoring throw, at least 90% first-snap convertibility, and reference par at most three. Per-date generation excludes the prior 30 shells, writes the public puzzle to `public/puzzles/`, and writes the unobfuscated answer and measurements only to gitignored `.generated/solutions/`.
 
 The UI keeps the coverage name and candidate list hidden during play. It accumulates route and defender trails, labels only route-stressed assignments, and reveals the complete defense plus every scoring throw after the series. Daily rounds and streaks use versioned `huddle:*:v1` localStorage keys; archive and practice are separate, and practice never affects the streak.
 
 ## Deployment and test cadence
 
-The Pages workflow restores its validated puzzle archive, fills missing dates through the current UTC day, builds, and deploys. It incorporates the lesson from Puttle’s first deployment: pushes and manual runs execute exhaustive generation plus Playwright, while the daily cron runs the fast deterministic suite and build only. A routine daily publish therefore does not reinstall Chromium and repeat the 10-minute-plus full suite for a one-file archive advance.
+The Pages workflow restores its validated puzzle archive, fills missing dates through the current UTC day, verifies that today's file and index entry exist, builds, and deploys. Three staggered cron windows make the publish resilient to GitHub schedule delays; because generation uses `--missing`, retries are safe. Pushes and manual runs execute exhaustive generation plus Playwright, while daily cron runs use the fast deterministic suite and build only.
 
 The browser parity harness remains intentional: here it protects serialized table decoding and lookup consistency, not floating-point physics.
 

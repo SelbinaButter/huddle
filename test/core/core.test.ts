@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { buildTables } from '../../scripts/buildTables'
-import { allPlays, computeShellTables, feedbackFor, filterCandidates, measureShell, SHELL_BY_ID } from '../../src/core'
+import { allPlays, computeShellTables, feedbackFor, filterCandidates, measureShell, resolvePlay, SHELL_BY_ID } from '../../src/core'
 
 const tables = buildTables()
 
@@ -22,6 +22,21 @@ describe('coverage core', () => {
       expect(reverse).toContain(shellId)
       expect([...forward].sort()).toEqual([...reverse].sort())
     }
+  })
+
+  it('lets an open receiver run after the catch but gives covered throws no YAC', () => {
+    const openShell = SHELL_BY_ID.get('C0-F-W-ii')
+    const coveredShell = SHELL_BY_ID.get('C1-F-none-ii')
+    expect(openShell).toBeDefined()
+    expect(coveredShell).toBeDefined()
+
+    expect(resolvePlay(openShell!, 'four-verts', 'R')).toMatchObject({
+      kind: 'touchdown', airYards: 7, yardsAfterCatch: 5, yards: 12,
+    })
+
+    const covered = resolvePlay(coveredShell!, 'four-verts', 'R')
+    expect(covered.yardsAfterCatch).toBe(0)
+    expect(['breakup', 'interception']).toContain(covered.kind)
   })
 
   it('has a healthy measured pool passing every daily gate', () => {

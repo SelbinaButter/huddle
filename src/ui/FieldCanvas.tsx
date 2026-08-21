@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
-import { assignmentsFor, CONCEPTS, DEFENDER_STARTS, leveragedZoneAnchor, RECEIVER_STARTS, SHELL_BY_ID, targetRoute, type ConceptId, type Observation, type PlayedSnap, type ReceiverId, type Vec2 } from '../core'
+import { assignmentsFor, CONCEPTS, DEFENDER_STARTS, leveragedZoneAnchor, RECEIVER_STARTS, SHELL_BY_ID, targetRoute, type ConceptId, type Observation, type PlayedSnap, type PlayOutcome, type ReceiverId, type Route, type Vec2 } from '../core'
 
-interface ActiveSnap { observation: Observation; progress: number }
+interface ActiveSnap { observation: Observation; outcome: PlayOutcome; progress: number }
 interface Props {
   concept: ConceptId
   target: ReceiverId
@@ -19,6 +19,13 @@ function pointAt(points: Vec2[], progress: number): Vec2 {
   const a = points[index]
   const b = points[Math.min(index + 1, points.length - 1)]
   return { x: a.x + (b.x - a.x) * blend, y: a.y + (b.y - a.y) * blend }
+}
+
+function playPath(route: Route, outcome: PlayOutcome): Vec2[] {
+  // Saved rounds from the original rules do not have the YAC field.
+  if (!outcome.yardsAfterCatch) return route.points
+  const caught = route.points[route.points.length - 1]
+  return [...route.points, { x: caught.x, y: caught.y + outcome.yardsAfterCatch }]
 }
 
 export function FieldCanvas({ concept, target, snaps, active, revealedShellId }: Props) {
@@ -63,7 +70,7 @@ export function FieldCanvas({ concept, target, snaps, active, revealedShellId }:
     snaps.forEach((snap, index) => {
       const color = snap.outcome.kind === 'touchdown' ? '#63e6a7' : snap.outcome.kind === 'interception' ? '#ff6b68' : '#d9e7df'
       const route = targetRoute(snap.concept, snap.target)
-      path(route.points, color, .22 + index * .08, 3)
+      path(playPath(route, snap.outcome), color, .22 + index * .08, 3)
       snap.observation.defenders.forEach((defender) => path([defender.from, defender.to], defender.kind === 'blitz' ? '#ff6b68' : '#8ed6ff', .16 + index * .07, 2))
     })
 
@@ -71,7 +78,10 @@ export function FieldCanvas({ concept, target, snaps, active, revealedShellId }:
     selected.routes.forEach((route) => path(route.points, COLORS[route.receiver], route.receiver === target ? .95 : .32, route.receiver === target ? 4 : 2, !active))
 
     const progress = active?.progress ?? 0
-    selected.routes.forEach((route) => dot(active ? pointAt(route.points, progress) : RECEIVER_STARTS[route.receiver], COLORS[route.receiver], route.receiver, route.receiver === target ? 11 : 9))
+    selected.routes.forEach((route) => {
+      const points = active && route.receiver === target ? playPath(route, active.outcome) : route.points
+      dot(active ? pointAt(points, progress) : RECEIVER_STARTS[route.receiver], COLORS[route.receiver], route.receiver, route.receiver === target ? 11 : 9)
+    })
     dot({ x: 0, y: -4 }, '#f4eee5', 'QB', 10)
 
     const rushStarts = [-13, -4, 4, 13].map((x) => ({ x, y: 2 }))
