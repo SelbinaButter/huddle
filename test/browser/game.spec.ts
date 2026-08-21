@@ -1,17 +1,29 @@
 import { readFile } from 'node:fs/promises'
 import { expect, test } from '@playwright/test'
 import { decodeShell, type LookupTables, type Puzzle } from '../../src/core'
+import { localDate, previousDate } from '../../src/game/date'
 
 test('daily, archive, practice, and a scoring snap work', async ({ page }) => {
+  const today = localDate()
+  const next = new Date()
+  next.setDate(next.getDate() + 1)
+  const futureDate = localDate(next)
+  await page.route('**/puzzles/index.json', async (route) => {
+    const response = await route.fetch()
+    const index = await response.json() as { dates: string[] }
+    await route.fulfill({ response, json: { dates: [...new Set([...index.dates, futureDate])] } })
+  })
   await page.goto('/')
   await page.getByRole('button', { name: 'Call the first play' }).click()
   await expect(page.getByRole('heading', { name: /Huddle/ })).toBeVisible()
   await page.getByRole('button', { name: 'Archive' }).click()
   await expect(page.getByText('Archived game')).toBeVisible()
+  await expect(page.locator('.archive-picker select')).toHaveValue(previousDate(today))
+  await expect(page.locator(`.archive-picker option[value="${futureDate}"]`)).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Next archived game' })).toBeDisabled()
   await page.getByRole('button', { name: 'Practice' }).click()
   await expect(page.getByText(/daily streak stays untouched/)).toBeVisible()
   await page.getByRole('button', { name: 'Today' }).click()
-  const today = new Date().toISOString().slice(0, 10)
   const puzzle = JSON.parse(await readFile(`public/puzzles/${today}.json`, 'utf8')) as Puzzle
   const tables = JSON.parse(await readFile('public/tables.json', 'utf8')) as LookupTables
   const shell = decodeShell(puzzle.shell, puzzle.date)

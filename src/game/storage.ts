@@ -1,4 +1,4 @@
-import { previousUtcDate, utcDate } from './date'
+import { localDate, previousDate } from './date'
 import type { PlayerStats, SavedRound } from './types'
 
 const LEGACY_ROUND_KEY = 'huddle:round:v1'
@@ -25,15 +25,15 @@ export function saveRound(round: SavedRound): void {
 
 export function loadStats(now = new Date()): PlayerStats {
   const stats = read<PlayerStats>(STATS_KEY) ?? { ...EMPTY_STATS }
-  const today = utcDate(now)
-  if (stats.lastCompletedDate && stats.lastCompletedDate !== today && stats.lastCompletedDate !== previousUtcDate(today)) return { ...stats, currentStreak: 0 }
+  const today = localDate(now)
+  if (stats.lastCompletedDate && stats.lastCompletedDate !== today && stats.lastCompletedDate !== previousDate(today)) return { ...stats, currentStreak: 0 }
   return stats
 }
 
 export function recordResult(date: string, puzzleNumber: number, snaps: number | null): PlayerStats {
   const stats = loadStats()
   if (stats.history.some((entry) => entry.date === date)) return stats
-  const currentStreak = snaps === null ? 0 : stats.lastCompletedDate === previousUtcDate(date) ? stats.currentStreak + 1 : 1
+  const currentStreak = snaps === null ? 0 : stats.lastCompletedDate === previousDate(date) ? stats.currentStreak + 1 : 1
   const key = snaps === null ? 'X' : String(snaps)
   const updated: PlayerStats = {
     currentStreak,

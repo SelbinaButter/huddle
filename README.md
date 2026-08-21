@@ -1,6 +1,6 @@
 # Huddle
 
-A daily football coverage puzzle. A defense lines up against you; call a concept, commit to a receiver, watch the annotated film, and find the throw that scores in four snaps. Everyone gets the same UTC-dated defense.
+A daily football coverage puzzle. A defense lines up against you; call a concept, commit to a receiver, watch the annotated film, and find the throw that scores in four snaps. Everyone gets the same defense for their local calendar date.
 
 ## Run it
 
@@ -34,7 +34,7 @@ The UI keeps the coverage name and candidate list hidden during play. It accumul
 
 ## Deployment and test cadence
 
-The Pages workflow restores its validated puzzle archive, fills missing dates through the current UTC day, verifies that today's file and index entry exist, builds, and deploys. Three staggered cron windows make the publish resilient to GitHub schedule delays; because generation uses `--missing`, retries are safe. Pushes and manual runs execute exhaustive generation plus Playwright, while daily cron runs use the fast deterministic suite and build only.
+The Pages workflow restores its validated puzzle archive, fills missing dates through tomorrow in UTC, verifies the release window, builds, and deploys. Pre-generating one day ahead lets UTC+ time zones receive a puzzle at local midnight; the browser filters future dates out of daily, archive, and practice modes until the player's calendar reaches them. Three staggered cron windows make publishing resilient to GitHub schedule delays, and `--missing` makes retries safe. Pushes and manual runs execute exhaustive generation plus Playwright, while daily cron runs use the fast deterministic suite and build only.
 
 The browser parity harness remains intentional: here it protects serialized table decoding and lookup consistency, not floating-point physics.
 

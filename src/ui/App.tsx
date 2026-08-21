@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { CONCEPTS, decodeShell, filterCandidates, outcomeFor, RECEIVERS, SHELL_BY_ID, type ConceptId, type LookupTables, type PlayedSnap, type Puzzle, type ReceiverId } from '../core'
 import { MAX_SNAPS } from '../game/constants'
-import { previousUtcDate, utcDate } from '../game/date'
+import { localDate, previousDate } from '../game/date'
 import { shareText, type ShareMode } from '../game/share'
 import { hasSeenOnboarding, loadRound, loadStats, markOnboardingSeen, recordResult, saveRound } from '../game/storage'
 import type { PlayerStats } from '../game/types'
@@ -24,7 +24,7 @@ function randomIndex(length: number): number {
 }
 
 export default function App() {
-  const today = useMemo(() => utcDate(), [])
+  const [today, setToday] = useState(() => localDate())
   const [tables, setTables] = useState<LookupTables>()
   const [availableDates, setAvailableDates] = useState<string[]>([today])
   const [mode, setMode] = useState<GameMode>('daily')
@@ -42,6 +42,28 @@ export default function App() {
   const [stats, setStats] = useState<PlayerStats>(() => loadStats())
   const [copied, setCopied] = useState(false)
   const frame = useRef<number>()
+
+  useEffect(() => {
+    let timer: number
+    const syncDate = () => {
+      const date = localDate()
+      setToday(date)
+      if (mode === 'daily') setSelectedDate(date)
+    }
+    const scheduleMidnight = () => {
+      const now = new Date()
+      const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
+      timer = window.setTimeout(() => { syncDate(); scheduleMidnight() }, midnight.getTime() - now.getTime() + 100)
+    }
+    scheduleMidnight()
+    window.addEventListener('focus', syncDate)
+    document.addEventListener('visibilitychange', syncDate)
+    return () => {
+      window.clearTimeout(timer)
+      window.removeEventListener('focus', syncDate)
+      document.removeEventListener('visibilitychange', syncDate)
+    }
+  }, [mode])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -97,7 +119,7 @@ export default function App() {
   const changeMode = (nextMode: GameMode) => {
     if (nextMode === 'practice') return choosePracticePuzzle()
     setMode(nextMode)
-    setSelectedDate(nextMode === 'daily' ? today : availableDates.filter((date) => date < today).at(-1) ?? previousUtcDate(today))
+    setSelectedDate(nextMode === 'daily' ? today : availableDates.filter((date) => date < today).at(-1) ?? previousDate(today))
   }
 
   const runSnap = () => {
@@ -179,7 +201,7 @@ export default function App() {
             </aside>
           </section>}
 
-      <footer><span>UTC puzzle · {puzzle?.date ?? today}</span><span>{stats.currentStreak} streak · {stats.history.length} played · best {stats.bestStreak}</span></footer>
+      <footer><span>Local date · {puzzle?.date ?? today}</span><span>{stats.currentStreak} streak · {stats.history.length} played · best {stats.bestStreak}</span></footer>
 
       {showOnboarding && <div className="overlay" role="dialog" aria-modal="true" aria-label="How to play Huddle"><div className="onboarding"><span className="eyebrow">Welcome to Huddle</span><h2>Find the throw that scores.</h2><ol><li><b>Call a concept.</b> Its five routes stress a different part of the defense.</li><li><b>Pick one target.</b> Only that receiver’s result counts.</li><li><b>Read the film.</b> Zone patches, man tethers, blitzes, and old trails accumulate.</li><li><b>Score in four snaps.</b> The defense and ball position never change.</li></ol><div className="legend"><span><i className="zone-key" /> Zone</span><span><i className="man-key" /> Man</span><span><i className="blitz-key" /> Blitz</span></div><button type="button" onClick={closeOnboarding}>Call the first play</button><small>No football vocabulary required—the overlay does the labeling.</small></div></div>}
     </main>
